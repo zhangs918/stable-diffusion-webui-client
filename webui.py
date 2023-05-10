@@ -61,6 +61,7 @@ import modules.ui
 from modules import modelloader
 from modules.shared import cmd_opts
 import modules.hypernetworks.hypernetwork
+from modules.remote_client import active_loop
 
 startup_timer.record("other imports")
 
@@ -258,6 +259,7 @@ def setup_middleware(app):
 def create_api(app):
     from modules.api.api import Api
     api = Api(app, queue_lock)
+    active_loop()
     return api
 
 
