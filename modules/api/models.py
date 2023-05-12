@@ -6,6 +6,7 @@ from inflection import underscore
 from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img
 from modules.shared import sd_upscalers, opts, parser
 from typing import Dict, List
+from modules import txt2img
 
 API_NOT_ALLOWED = [
     "self",
@@ -289,3 +290,20 @@ class MemoryResponse(BaseModel):
 class ScriptsList(BaseModel):
     txt2img: list = Field(default=None,title="Txt2img", description="Titles of scripts (txt2img)")
     img2img: list = Field(default=None,title="Img2img", description="Titles of scripts (img2img)")
+
+def gen_model_from_func(model_name, func):
+    param = {}
+    for p in inspect.signature(func).parameters.values():
+        if p.annotation == inspect._empty:
+            param.update({p.name: (str, Field())})
+        else:
+            param.update({p.name: (p.annotation, Field())})
+    return create_model(model_name, **param)
+
+StableDiffusionTxt2ImgProcessingAPIV2 = gen_model_from_func("StableDiffusionTxt2ImgProcessingAPIV2", txt2img.txt2img)
+
+class TextToImageResponseV2(BaseModel):
+    images: List[str] = Field(default=None, title="Image", description="The generated image in base64 format.")
+    generation_info_js: str
+    processed_info: str
+    processed_comments: str

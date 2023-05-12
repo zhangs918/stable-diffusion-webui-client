@@ -1,3 +1,4 @@
+import json
 import base64
 import io
 import time
@@ -28,6 +29,9 @@ from modules import devices
 from typing import List
 import piexif
 import piexif.helper
+from modules import txt2img, progress
+from modules.progress import progressapi as progressapiv2
+from modules.progress import ProgressResponse as ProgressResponseV2
 
 def upscaler_to_index(name: str):
     try:
@@ -166,6 +170,8 @@ class Api:
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
+        self.add_api_route("/sdapi/v2/txt2img", self.text2imgapiv2, methods=["POST"], response_model=TextToImageResponseV2)
+        self.add_api_route("/sdapi/v2/progress", progressapiv2, methods=["POST"], response_model=ProgressResponseV2)
         self.add_api_route("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"], response_model=TextToImageResponse)
         self.add_api_route("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
         self.add_api_route("/sdapi/v1/extra-single-image", self.extras_single_image_api, methods=["POST"], response_model=ExtrasSingleImageResponse)
@@ -275,6 +281,21 @@ class Api:
                     for idx in range(0, min((alwayson_script.args_to - alwayson_script.args_from), len(request.alwayson_scripts[alwayson_script_name]["args"]))):
                         script_args[alwayson_script.args_from + idx] = request.alwayson_scripts[alwayson_script_name]["args"][idx]
         return script_args
+
+    def text2imgapiv2(self, txt2imgreq: StableDiffusionTxt2ImgProcessingAPIV2):
+        args = vars(txt2imgreq)
+        args['prompt_styles'] = json.loads(args['prompt_styles'])
+        args['override_settings_texts'] = json.loads(args['override_settings_texts'])
+        script_args = json.loads(args.pop('args'))
+        id_task = args['id_task']
+        progress.add_task_to_queue(id_task)
+        shared.state.begin()
+        progress.start_task(id_task)
+        images, generation_info_js, processed_info, processed_comments = txt2img.txt2img(*(args.values()), *script_args)
+        progress.finish_task(id_task)
+        shared.state.end()
+        b64images = list(map(encode_pil_to_base64, images))
+        return TextToImageResponseV2(images=b64images, generation_info_js=generation_info_js, processed_info=processed_info, processed_comments=processed_comments)
 
     def text2imgapi(self, txt2imgreq: StableDiffusionTxt2ImgProcessingAPI):
         script_runner = scripts.scripts_txt2img
