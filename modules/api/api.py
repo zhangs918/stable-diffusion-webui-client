@@ -29,7 +29,7 @@ from modules import devices
 from typing import List
 import piexif
 import piexif.helper
-from modules import txt2img, progress
+from modules import txt2img, img2img, progress
 from modules.progress import progressapi as progressapiv2
 from modules.progress import ProgressResponse as ProgressResponseV2
 
@@ -171,6 +171,7 @@ class Api:
         self.queue_lock = queue_lock
         api_middleware(self.app)
         self.add_api_route("/sdapi/v2/txt2img", self.text2imgapiv2, methods=["POST"], response_model=TextToImageResponseV2)
+        self.add_api_route("/sdapi/v2/img2img", self.img2imgapiv2, methods=["POST"], response_model=ImageToImageResponseV2)
         self.add_api_route("/sdapi/v2/progress", progressapiv2, methods=["POST"], response_model=ProgressResponseV2)
         self.add_api_route("/sdapi/v1/txt2img", self.text2imgapi, methods=["POST"], response_model=TextToImageResponse)
         self.add_api_route("/sdapi/v1/img2img", self.img2imgapi, methods=["POST"], response_model=ImageToImageResponse)
@@ -296,6 +297,31 @@ class Api:
         shared.state.end()
         b64images = list(map(encode_pil_to_base64, images))
         return TextToImageResponseV2(images=b64images, generation_info_js=generation_info_js, processed_info=processed_info, processed_comments=processed_comments)
+
+    def img2imgapiv2(self, img2imgreq: StableDiffusionImg2ImgProcessingAPIV2):
+        args = vars(img2imgreq)
+        args['prompt_styles'] = json.loads(args['prompt_styles'])
+        args['override_settings_texts'] = json.loads(args['override_settings_texts'])
+        script_args = json.loads(args.pop('args'))
+        for x in ['init_img', 'sketch', 'inpaint_color_sketch', 'inpaint_color_sketch_orig', 'init_img_inpaint', 'init_mask_inpaint']:
+            if args[x] != 'null':
+                args[x] = decode_base64_to_image(args[x])
+            else:
+                args[x] = json.loads(args[x])
+        if args['init_img_with_mask'] != 'null':
+            args['init_img_with_mask']['image'] = decode_base64_to_image(args['init_img_with_mask']['image'])
+            args['init_img_with_mask']['mask'] = decode_base64_to_image(args['init_img_with_mask']['mask'])
+        else:
+            args['init_img_with_mask'] = json.loads(args['init_img_with_mask'])
+        id_task = args['id_task']
+        progress.add_task_to_queue(id_task)
+        shared.state.begin()
+        progress.start_task(id_task)
+        images, generation_info_js, processed_info, processed_comments = img2img.img2img(*(args.values()), *script_args)
+        progress.finish_task(id_task)
+        shared.state.end()
+        b64images = list(map(encode_pil_to_base64, images))
+        return ImageToImageResponseV2(images=b64images, generation_info_js=generation_info_js, processed_info=processed_info, processed_comments=processed_comments)
 
     def text2imgapi(self, txt2imgreq: StableDiffusionTxt2ImgProcessingAPI):
         script_runner = scripts.scripts_txt2img
