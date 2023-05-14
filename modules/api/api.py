@@ -32,6 +32,7 @@ import piexif.helper
 from modules import txt2img, img2img, progress
 from modules.progress import progressapi as progressapiv2
 from modules.progress import ProgressResponse as ProgressResponseV2
+from modules.zh2prompt import zh2prompt_gen
 
 def upscaler_to_index(name: str):
     try:
@@ -170,6 +171,7 @@ class Api:
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
+        self.add_api_route("/sdapi/v1/zh2prompt", self.zh2promptapi, methods=["POST"], response_model=Zh2PromptResponse)
         self.add_api_route("/sdapi/v2/txt2img", self.text2imgapiv2, methods=["POST"], response_model=TextToImageResponseV2)
         self.add_api_route("/sdapi/v2/img2img", self.img2imgapiv2, methods=["POST"], response_model=ImageToImageResponseV2)
         self.add_api_route("/sdapi/v2/progress", progressapiv2, methods=["POST"], response_model=ProgressResponseV2)
@@ -283,6 +285,11 @@ class Api:
                         script_args[alwayson_script.args_from + idx] = request.alwayson_scripts[alwayson_script_name]["args"][idx]
         return script_args
 
+    def zh2promptapi(self, req: Zh2PromptRequest):
+        if(not req.zh_prompt.strip()):
+            return PNGInfoResponse(en_prompt="")
+        return Zh2PromptResponse(en_prompt=zh2prompt_gen(req.zh_prompt.strip()))
+
     def text2imgapiv2(self, txt2imgreq: StableDiffusionTxt2ImgProcessingAPIV2):
         args = vars(txt2imgreq)
         args['prompt_styles'] = json.loads(args['prompt_styles'])
@@ -308,11 +315,10 @@ class Api:
                 args[x] = decode_base64_to_image(args[x])
             else:
                 args[x] = json.loads(args[x])
-        if args['init_img_with_mask'] != 'null':
+        args['init_img_with_mask'] = json.loads(args['init_img_with_mask'])
+        if args['init_img_with_mask']:
             args['init_img_with_mask']['image'] = decode_base64_to_image(args['init_img_with_mask']['image'])
             args['init_img_with_mask']['mask'] = decode_base64_to_image(args['init_img_with_mask']['mask'])
-        else:
-            args['init_img_with_mask'] = json.loads(args['init_img_with_mask'])
         id_task = args['id_task']
         progress.add_task_to_queue(id_task)
         shared.state.begin()

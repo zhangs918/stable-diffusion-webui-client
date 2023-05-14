@@ -315,3 +315,9 @@ class ImageToImageResponseV2(BaseModel):
     generation_info_js: str
     processed_info: str
     processed_comments: str
+
+class Zh2PromptRequest(BaseModel):
+    zh_prompt: str = Field(title="ZH text prompt")
+
+class Zh2PromptResponse(BaseModel):
+    en_prompt: str = Field(title="converted en prompt")

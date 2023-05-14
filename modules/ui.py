@@ -41,6 +41,7 @@ from modules.textual_inversion import textual_inversion
 import modules.hypernetworks.ui
 from modules.generation_parameters_copypaste import image_from_url_text
 import modules.extras
+from modules.zh2prompt import zh2prompt_gen
 
 warnings.filterwarnings("default" if opts.show_warnings else "ignore", category=UserWarning)
 
@@ -459,6 +460,19 @@ def create_ui():
 
     modules.scripts.scripts_current = modules.scripts.scripts_txt2img
     modules.scripts.scripts_txt2img.initialize_scripts(is_img2img=False)
+
+    with gr.Blocks(analytics_enabled=False) as zh2prompt_interface:
+        with gr.Row().style(equal_height=False):
+            with gr.Column(variant='panel'):
+                zh_input = gr.Textbox(elem_id="zh2prompt_zh_input", lines=3, label="Chinese prompt")
+
+            # with gr.Column(variant='panel'):
+                gen_prompt_btn = gr.Button(elem_id="zh2prompt_generate_btn", value="Generate", variant='primary')
+
+            with gr.Column(variant='panel'):
+                generated_prompt = gr.Textbox(elem_id="pnginfo_generated_prompt", lines=3, label="Model generated EN prompt")
+
+        gen_prompt_btn.click(zh2prompt_gen, inputs=[zh_input], outputs=[generated_prompt])
 
     with gr.Blocks(analytics_enabled=False) as txt2img_interface:
         txt2img_prompt, txt2img_prompt_styles, txt2img_negative_prompt, submit, _, _, txt2img_prompt_style_apply, txt2img_save_style, txt2img_paste, extra_networks_button, token_counter, token_button, negative_token_counter, negative_token_button, restore_progress_button = create_toprow(is_img2img=False)
@@ -1636,6 +1650,7 @@ def create_ui():
     interfaces = [
         (txt2img_interface, "txt2img", "txt2img"),
         (img2img_interface, "img2img", "img2img"),
+        (zh2prompt_interface, "zh2prompt", "zh2prompt"),
         (extras_interface, "Extras", "extras"),
         (pnginfo_interface, "PNG Info", "pnginfo"),
         (modelmerger_interface, "Checkpoint Merger", "modelmerger"),
