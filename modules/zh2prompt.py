@@ -3,8 +3,9 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 
 class BaiduTrans:
     def __init__(self):
-        self.token_url = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=eObEtaf2mBHg4x4RqGOHOWXT&client_secret=HbA9TmhykS2PtnpaMSHsmKcccXSvOhb3'
+        self.token_url = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=%s&client_secret=%s'
         self.trans_url = 'https://aip.baidubce.com/rpc/2.0/mt/texttrans/v1?access_token='
+        self.token_url = self.token_url % (shared.cmd_opts.trans_client_id, shared.cmd_opts.trans_client_secret)
 
     def get_token(self):
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
