@@ -1,11 +1,12 @@
 import requests, json
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from modules.shared import cmd_opts
 
 class BaiduTrans:
     def __init__(self):
         self.token_url = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=%s&client_secret=%s'
         self.trans_url = 'https://aip.baidubce.com/rpc/2.0/mt/texttrans/v1?access_token='
-        self.token_url = self.token_url % (shared.cmd_opts.trans_client_id, shared.cmd_opts.trans_client_secret)
+        self.token_url = self.token_url % (cmd_opts.trans_client_id, cmd_opts.trans_client_secret)
 
     def get_token(self):
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
