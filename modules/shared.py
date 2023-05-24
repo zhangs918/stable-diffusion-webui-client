@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import requests
+import re
 
 from PIL import Image
 import gradio as gr
@@ -701,3 +702,23 @@ def html(filename):
             return file.read()
 
     return ""
+
+def file_download(remote_url, local_path, filename=None):
+    def_headers = {
+        'User-Agent': 'Mozilla/5.0 (iPad; CPU OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'}
+    if not filename:
+        r = requests.get(remote_url, headers=def_headers)
+        filename = re.search('filename="(.*?)"', r.headers['Content-Disposition']).group(1)
+    local_path += '/' + filename
+    if os.path.exists(local_path):
+        temp_size = os.path.getsize(local_path)
+    else:
+        temp_size = 0
+    headers = {'Range': 'bytes=%d-' % temp_size}
+    headers['User-Agent'] = def_headers['User-Agent']
+    r = requests.get(remote_url, headers=headers, stream=True)
+    with open(local_path, "ab") as f:
+        for chunk in r.iter_content(chunk_size=1024*1024*5):
+            if chunk:
+                temp_size += len(chunk)
+                f.write(chunk)

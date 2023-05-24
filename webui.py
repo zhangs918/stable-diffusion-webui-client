@@ -61,7 +61,7 @@ import modules.ui
 from modules import modelloader
 from modules.shared import cmd_opts
 import modules.hypernetworks.hypernetwork
-from modules.remote_client import active_loop
+from remote_client import active_loop, sync_files_loop
 
 startup_timer.record("other imports")
 
@@ -260,6 +260,7 @@ def create_api(app):
     from modules.api.api import Api
     api = Api(app, queue_lock)
     active_loop()
+    sync_files_loop()
     return api
 
 
