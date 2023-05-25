@@ -260,7 +260,8 @@ def create_api(app):
     from modules.api.api import Api
     api = Api(app, queue_lock)
     active_loop()
-    sync_files_loop()
+    if shared.cmd_opts.run_sync_files:
+        sync_files_loop()
     return api
 
 

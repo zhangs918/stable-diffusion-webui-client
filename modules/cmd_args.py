@@ -107,3 +107,4 @@ parser.add_argument("--remote-file-server-url", type=str, help="remote file serv
 parser.add_argument("--remote-server-url", type=str, help="remote server url, http://ip:port", default=None)
 parser.add_argument("--trans-client-id", type=str, help="", default="")
 parser.add_argument("--trans-client-secret", type=str, help="", default="")
+parser.add_argument("--run-sync-files", action='store_true', help="run sync files", default=False)
