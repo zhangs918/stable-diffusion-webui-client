@@ -396,11 +396,20 @@ def create_refresh_button(refresh_component, refresh_method, refreshed_args, ele
         return gr.update(**(args or {}))
 
     refresh_button = ToolButton(value=refresh_symbol, elem_id=elem_id)
-    refresh_button.click(
-        fn=refresh,
-        inputs=[],
-        outputs=[refresh_component]
-    )
+    if elem_id in ["refresh_sd_model_checkpoint"]:
+        refresh_button.click(
+            fn=refresh,
+            inputs=[],
+            outputs=[refresh_component],
+            queue=True,
+            every=3
+        )
+    else:
+        refresh_button.click(
+            fn=refresh,
+            inputs=[],
+            outputs=[refresh_component]
+        )
     return refresh_button
 
 
