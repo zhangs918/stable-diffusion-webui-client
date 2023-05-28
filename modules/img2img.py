@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image, ImageOps, ImageFilter, ImageEnhance, ImageChops, UnidentifiedImageError
 
 from modules import devices, sd_samplers
-from modules.generation_parameters_copypaste import create_override_settings_dict
+from modules.generation_parameters_copypaste import create_override_settings_dict, infotext_to_setting_name_mapping
 from modules.processing import Processed, StableDiffusionProcessingImg2Img, process_images
 from modules.shared import opts, state
 import modules.shared as shared
@@ -82,7 +82,12 @@ def process_batch(p, input_dir, output_dir, inpaint_mask_dir, args):
 
 
 def img2img(id_task: str, mode: int, prompt: str, negative_prompt: str, prompt_styles, init_img, sketch, init_img_with_mask, inpaint_color_sketch, inpaint_color_sketch_orig, init_img_inpaint, init_mask_inpaint, steps: int, sampler_index: int, mask_blur: int, mask_alpha: float, inpainting_fill: int, restore_faces: bool, tiling: bool, n_iter: int, batch_size: int, cfg_scale: float, image_cfg_scale: float, denoising_strength: float, seed: int, subseed: int, subseed_strength: float, seed_resize_from_h: int, seed_resize_from_w: int, seed_enable_extras: bool, selected_scale_tab: int, height: int, width: int, scale_by: float, resize_mode: int, inpaint_full_res: bool, inpaint_full_res_padding: int, inpainting_mask_invert: int, img2img_batch_input_dir: str, img2img_batch_output_dir: str, img2img_batch_inpaint_mask_dir: str, override_settings_texts, *args):
-    override_settings = create_override_settings_dict(override_settings_texts)
+    # override_settings = create_override_settings_dict(override_settings_texts)
+    override_settings = {}
+    for pair in override_settings_texts:
+        k, v = pair.split(":", maxsplit=1)
+        k = dict(infotext_to_setting_name_mapping).get(k, k)
+        override_settings[k] = shared.opts.cast_value(k, v.strip())
 
     is_batch = mode == 5
 
