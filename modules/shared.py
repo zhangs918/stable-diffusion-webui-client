@@ -603,8 +603,8 @@ class Options:
 
 
 opts = Options()
-if os.path.exists(config_filename):
-    opts.load(config_filename)
+# if os.path.exists(config_filename):
+#     opts.load(config_filename)
 
 settings_components = None
 """assinged from ui.py, a mapping on setting anmes to gradio components repsponsible for those settings"""
