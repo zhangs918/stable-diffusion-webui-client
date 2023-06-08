@@ -6,7 +6,7 @@ from inflection import underscore
 from modules.processing import StableDiffusionProcessingTxt2Img, StableDiffusionProcessingImg2Img
 from modules.shared import sd_upscalers, opts, parser
 from typing import Dict, List
-from modules import txt2img, img2img
+from modules import txt2img, img2img, postprocessing
 
 API_NOT_ALLOWED = [
     "self",
@@ -315,6 +315,16 @@ class ImageToImageResponseV2(BaseModel):
     generation_info_js: str
     processed_info: str
     processed_comments: str
+
+StableDiffusionImg2ImgProcessingAPIV2 = gen_model_from_func("StableDiffusionImg2ImgProcessingAPIV2", img2img.img2img)
+
+class ImageToImageResponseV2(BaseModel):
+    images: List[str] = Field(default=None, title="Image", description="The generated image in base64 format.")
+    generation_info_js: str
+    processed_info: str
+    processed_comments: str
+
+ExtrasSingleImageRequestV2 = gen_model_from_func("ExtrasSingleImageRequestV2", postprocessing.run_postprocessing)
 
 class Zh2PromptRequest(BaseModel):
     zh_prompt: str = Field(title="ZH text prompt")

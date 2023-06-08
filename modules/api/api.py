@@ -171,6 +171,7 @@ class Api:
         self.app = app
         self.queue_lock = queue_lock
         api_middleware(self.app)
+        self.add_api_route("/sdapi/v2/extra-single-image", self.extras_single_image_apiv2, methods=["POST"], response_model=ExtrasSingleImageResponse)
         self.add_api_route("/sdapi/v1/zh2prompt", self.zh2promptapi, methods=["POST"], response_model=Zh2PromptResponse)
         self.add_api_route("/sdapi/v2/txt2img", self.text2imgapiv2, methods=["POST"], response_model=TextToImageResponseV2)
         self.add_api_route("/sdapi/v2/img2img", self.img2imgapiv2, methods=["POST"], response_model=ImageToImageResponseV2)
@@ -285,6 +286,16 @@ class Api:
                         script_args[alwayson_script.args_from + idx] = request.alwayson_scripts[alwayson_script_name]["args"][idx]
         return script_args
 
+    def extras_single_image_apiv2(self, req: ExtrasSingleImageRequestV2):
+        args = vars(req)
+        args['image'] = decode_base64_to_image(args['image'])
+        args['image_folder'] = json.loads(args['image_folder'])
+        script_args = json.loads(args.pop('args'))
+        args.pop('save_output')
+        with self.queue_lock:
+            result = postprocessing.run_postprocessing(*(args.values()), *script_args, False)
+        return ExtrasSingleImageResponse(image=encode_pil_to_base64(result[0][0]), html_info=result[1])
+
     def zh2promptapi(self, req: Zh2PromptRequest):
         if(not req.zh_prompt.strip()):
             return PNGInfoResponse(en_prompt="")
@@ -296,12 +307,13 @@ class Api:
         args['override_settings_texts'] = json.loads(args['override_settings_texts'])
         script_args = json.loads(args.pop('args'))
         id_task = args['id_task']
-        progress.add_task_to_queue(id_task)
-        shared.state.begin()
-        progress.start_task(id_task)
-        images, generation_info_js, processed_info, processed_comments = txt2img.txt2img(*(args.values()), *script_args)
-        progress.finish_task(id_task)
-        shared.state.end()
+        with self.queue_lock:
+            progress.add_task_to_queue(id_task)
+            shared.state.begin()
+            progress.start_task(id_task)
+            images, generation_info_js, processed_info, processed_comments = txt2img.txt2img(*(args.values()), *script_args)
+            progress.finish_task(id_task)
+            shared.state.end()
         b64images = list(map(encode_pil_to_base64, images))
         return TextToImageResponseV2(images=b64images, generation_info_js=generation_info_js, processed_info=processed_info, processed_comments=processed_comments)
 
@@ -320,12 +332,13 @@ class Api:
             args['init_img_with_mask']['image'] = decode_base64_to_image(args['init_img_with_mask']['image'])
             args['init_img_with_mask']['mask'] = decode_base64_to_image(args['init_img_with_mask']['mask'])
         id_task = args['id_task']
-        progress.add_task_to_queue(id_task)
-        shared.state.begin()
-        progress.start_task(id_task)
-        images, generation_info_js, processed_info, processed_comments = img2img.img2img(*(args.values()), *script_args)
-        progress.finish_task(id_task)
-        shared.state.end()
+        with self.queue_lock:
+            progress.add_task_to_queue(id_task)
+            shared.state.begin()
+            progress.start_task(id_task)
+            images, generation_info_js, processed_info, processed_comments = img2img.img2img(*(args.values()), *script_args)
+            progress.finish_task(id_task)
+            shared.state.end()
         b64images = list(map(encode_pil_to_base64, images))
         return ImageToImageResponseV2(images=b64images, generation_info_js=generation_info_js, processed_info=processed_info, processed_comments=processed_comments)
 
