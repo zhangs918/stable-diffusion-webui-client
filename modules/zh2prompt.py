@@ -15,7 +15,7 @@ class BaiduTrans:
 
     def trans(self, text):
         r = requests.post(self.trans_url + self.get_token(),
-                          params={'q': text, 'from': 'zh', 'to': 'en', 'termIds': ''},
+                          params={'q': text, 'from': 'auto', 'to': 'en', 'termIds': ''},
                           headers={'Content-Type': 'application/json'})
         return r.json()['result']['trans_result'][0]['dst']
 
@@ -28,9 +28,12 @@ class MagicPrompt:
     def gen_prompt(self, input):
         return self.magic_prompt(input)[0]['generated_text']
 
-tanslater = BaiduTrans()
-magic_prompt = MagicPrompt()
+tanslater, magic_prompt = None, None
 def zh2prompt_gen(zh_input):
+    global tanslater, magic_prompt
+    if not tanslater: tanslater = BaiduTrans()
+    if not magic_prompt: magic_prompt = MagicPrompt()
+
     if not zh_input.strip():
         return ''
     en_input = tanslater.trans(zh_input)

@@ -108,3 +108,4 @@ parser.add_argument("--remote-server-url", type=str, help="remote server url, ht
 parser.add_argument("--trans-client-id", type=str, help="", default="")
 parser.add_argument("--trans-client-secret", type=str, help="", default="")
 parser.add_argument("--run-sync-files", action='store_true', help="run sync files", default=False)
+parser.add_argument("--token-secret-key", type=str, help="", default="")
